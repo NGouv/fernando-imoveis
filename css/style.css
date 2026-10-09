@@ -152,7 +152,7 @@ img {
   background: var(--ink);
 }
 
-.hero-image,
+.hero-slides,
 .hero-shade {
   position: absolute;
   inset: 0;
@@ -160,12 +160,39 @@ img {
   height: 100%;
 }
 
-.hero-image {
+.hero-slides {
+  overflow: hidden;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  object-position: center 56%;
+  object-position: center;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 900ms ease;
+}
+
+.hero-slide.is-active {
+  opacity: 1;
+  animation: hero-image-zoom 5s ease-out both;
+}
+
+@keyframes hero-image-zoom {
+  from {
+    transform: scale(1.09);
+  }
+
+  to {
+    transform: scale(1.02);
+  }
 }
 
 .hero-shade {
+  z-index: 1;
   background:
     linear-gradient(90deg, rgba(13, 13, 12, 0.78) 0%, rgba(13, 13, 12, 0.47) 45%, rgba(13, 13, 12, 0.03) 100%),
     linear-gradient(0deg, rgba(13, 13, 12, 0.24), transparent 38%);
@@ -173,8 +200,24 @@ img {
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   padding-block: 110px 130px;
+}
+
+.hero.is-transitioning .hero-content {
+  animation: hero-copy-enter 650ms ease both;
+}
+
+@keyframes hero-copy-enter {
+  from {
+    opacity: 0.65;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .eyebrow {
@@ -291,12 +334,74 @@ p {
 
 .image-note {
   position: absolute;
+  z-index: 2;
   right: 32px;
   bottom: 27px;
   margin: 0;
   color: rgba(255, 255, 255, 0.74);
   font-size: 9px;
   letter-spacing: 0.06em;
+}
+
+.hero-carousel-controls {
+  position: absolute;
+  z-index: 2;
+  bottom: 20px;
+  left: max(32px, calc((100% - 1180px) / 2));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-control {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  color: var(--white);
+  background: rgba(21, 21, 21, 0.3);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.hero-control:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+  background: var(--gold);
+}
+
+.hero-control span {
+  font-size: 18px;
+}
+
+.hero-indicators {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hero-indicator {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  transition:
+    width 180ms ease,
+    border-radius 180ms ease,
+    background-color 180ms ease;
+}
+
+.hero-indicator.is-active {
+  width: 25px;
+  border-radius: 999px;
+  background: var(--gold);
 }
 
 .hero-scroll {
@@ -784,7 +889,7 @@ p {
 
   .about-layout {
     grid-template-columns: 1fr 1fr;
-    gap: 56px;
+    gap: clamp(32px, 6vw, 56px);
   }
 
   .differential-grid {
@@ -803,6 +908,16 @@ p {
 
   .contact-inner {
     align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 32px;
+  }
+
+  .contact-inner > div:first-child {
+    flex: 1 1 420px;
+  }
+
+  .contact-action {
+    margin-left: auto;
   }
 
   .footer-main {
@@ -900,8 +1015,8 @@ p {
     align-items: flex-end;
   }
 
-  .hero-image {
-    object-position: 61% center;
+  .hero-slide {
+    object-position: 58% center;
   }
 
   .hero-shade {
@@ -911,22 +1026,38 @@ p {
   }
 
   .hero-content {
-    padding-block: 110px 100px;
+    padding-block: 90px 112px;
   }
 
   .hero h1 {
     max-width: 430px;
-    font-size: clamp(51px, 13vw, 72px);
+    font-size: clamp(44px, 11.5vw, 64px);
   }
 
   .hero-description {
     max-width: 410px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .hero-actions {
     flex-wrap: wrap;
     gap: 18px;
+  }
+
+  .hero-carousel-controls {
+    bottom: 16px;
+    left: 20px;
+    gap: 9px;
+  }
+
+  .hero-control {
+    width: 44px;
+    height: 44px;
+  }
+
+  .image-note {
+    right: 20px;
+    bottom: 25px;
   }
 
   .button {
@@ -1014,12 +1145,12 @@ p {
   }
 
   .differential-item {
-    min-height: 202px;
-    padding: 19px 13px 18px 0;
+    min-height: 190px;
+    padding: 19px 14px 18px 0;
   }
 
   .differential-item + .differential-item {
-    padding-left: 13px;
+    padding-left: 14px;
   }
 
   .differential-item:nth-child(3) {
@@ -1027,11 +1158,12 @@ p {
   }
 
   .differential-item h3 {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .differential-item p {
-    font-size: 9px;
+    font-size: 11px;
+    line-height: 1.65;
   }
 
   .contact {
@@ -1048,7 +1180,7 @@ p {
   }
 
   .contact-description {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .footer-main {
@@ -1072,7 +1204,59 @@ p {
     flex-direction: column;
     gap: 7px;
     padding-block: 12px;
-    font-size: 8px;
+    font-size: 9px;
+  }
+
+  .detail-fact {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 380px) {
+  .container {
+    width: calc(100% - 32px);
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 12vw, 48px);
+  }
+
+  .hero-description {
+    font-size: 12px;
+  }
+
+  .hero-actions {
+    gap: 14px;
+  }
+
+  .hero-actions .button {
+    padding-inline: 15px;
+  }
+
+  .hero-carousel-controls {
+    left: 16px;
+  }
+
+  .image-note {
+    right: 16px;
+    max-width: 125px;
+    text-align: right;
+  }
+
+  .differential-item {
+    padding-right: 10px;
+  }
+
+  .differential-item + .differential-item {
+    padding-left: 10px;
+  }
+
+  .footer-main {
+    gap: 30px 16px;
+  }
+
+  .detail-fact {
+    padding: 12px 10px;
   }
 }
 
@@ -1088,6 +1272,11 @@ p {
 
   [data-reveal] {
     opacity: 1;
+    transform: none;
+  }
+
+  .hero-slide.is-active {
+    animation: none;
     transform: none;
   }
 }

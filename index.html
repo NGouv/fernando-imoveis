@@ -15,11 +15,12 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     >
-    <link rel="preload" as="image" href="assets/hero.png">
-    <link rel="stylesheet" href="style.css">
-    <script src="contact-config.js" defer></script>
-    <script src="site.js" defer></script>
-    <script src="script.js" defer></script>
+    <link rel="preload" as="image" href="assets/images/hero1.jfif" fetchpriority="high">
+    <link rel="icon" type="image/png" href="assets/images/logo-fb-trans.png">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/contact-config.js" defer></script>
+    <script src="js/site.js" defer></script>
+    <script src="js/home.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -27,7 +28,7 @@
     <header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="#inicio" aria-label="Fernando Bentivoglio, início">
-          <img src="assets/logo-fb-trans.png" alt="Fernando Bentivoglio">
+          <img src="assets/images/logo-fb-trans.png" alt="Fernando Bentivoglio">
         </a>
 
         <button
@@ -54,15 +55,31 @@
     </header>
 
     <main id="conteudo">
-      <section class="hero" id="inicio" aria-labelledby="hero-title">
-        <img
-          class="hero-image"
-          src="assets/hero.png"
-          alt=""
-          fetchpriority="high"
-          width="1672"
-          height="944"
-        >
+      <section
+        class="hero"
+        id="inicio"
+        aria-labelledby="hero-title"
+        aria-roledescription="carrossel"
+        data-hero-carousel
+      >
+        <div class="hero-slides" aria-hidden="true">
+          <img
+            class="hero-slide is-active"
+            src="assets/images/hero1.jfif"
+            alt=""
+            fetchpriority="high"
+            width="640"
+            height="425"
+          >
+          <img
+            class="hero-slide"
+            src="assets/images/hero2.jfif"
+            alt=""
+            loading="lazy"
+            width="736"
+            height="483"
+          >
+        </div>
         <div class="hero-shade"></div>
         <div class="container hero-content">
           <p class="eyebrow hero-eyebrow"><span></span> Goiânia e região</p>
@@ -80,6 +97,40 @@
           </div>
         </div>
         <p class="image-note">Imagem de ambientação</p>
+        <div class="hero-carousel-controls" role="group" aria-label="Controles das imagens">
+          <button
+            class="hero-control"
+            type="button"
+            data-hero-previous
+            aria-label="Exibir imagem anterior"
+          >
+            <span aria-hidden="true">←</span>
+          </button>
+          <div class="hero-indicators" role="group" aria-label="Selecionar imagem">
+            <button
+              class="hero-indicator is-active"
+              type="button"
+              data-hero-indicator="0"
+              aria-label="Exibir imagem 1"
+              aria-pressed="true"
+            ></button>
+            <button
+              class="hero-indicator"
+              type="button"
+              data-hero-indicator="1"
+              aria-label="Exibir imagem 2"
+              aria-pressed="false"
+            ></button>
+          </div>
+          <button
+            class="hero-control"
+            type="button"
+            data-hero-next
+            aria-label="Exibir próxima imagem"
+          >
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
         <a class="hero-scroll" href="#imoveis" aria-label="Descer até imóveis em destaque">
           <span></span>
         </a>
@@ -106,7 +157,7 @@
               <div class="property-image-link">
                 <img
                   class="property-image"
-                  src="assets/casa1/WhatsApp%20Image%202026-10-09%20at%2022.07.29.jpeg"
+                  src="assets/images/casa1/WhatsApp%20Image%202026-10-09%20at%2022.07.29.jpeg"
                   alt="Fachada contemporânea da casa no Parqville Pinheiros"
                   loading="lazy"
                   width="720"
@@ -143,7 +194,7 @@
               <div class="property-image-link">
                 <img
                   class="property-image"
-                  src="assets/casa2/WhatsApp%20Image%202026-10-09%20at%2022.10.37.jpeg"
+                  src="assets/images/casa2/WhatsApp%20Image%202026-10-09%20at%2022.10.37.jpeg"
                   alt="Fachada da casa no Residencial Santa Efigênia"
                   loading="lazy"
                   width="720"
@@ -179,7 +230,7 @@
               <div class="property-image-link">
                 <img
                   class="property-image"
-                  src="assets/casa3/WhatsApp%20Image%202026-10-09%20at%2022.20.14.jpeg"
+                  src="assets/images/casa3/WhatsApp%20Image%202026-10-09%20at%2022.20.14.jpeg"
                   alt="Fachada da casa no Residencial Terrabela Cerrado"
                   loading="lazy"
                   width="720"
@@ -219,11 +270,11 @@
           <div class="about-visual">
             <div class="about-image">
               <img
-                src="assets/hero.png"
+                src="assets/images/hero2.jfif"
                 alt=""
                 loading="lazy"
-                width="1672"
-                height="944"
+                width="736"
+                height="483"
               >
               <span class="about-image-note">Imagem de ambientação</span>
             </div>
@@ -317,7 +368,7 @@
       <div class="container footer-main">
         <div class="footer-brand">
           <a class="brand" href="#inicio" aria-label="Fernando Bentivoglio, início">
-            <img src="assets/logo-fb-trans.png" alt="Fernando Bentivoglio">
+            <img src="assets/images/logo-fb-trans.png" alt="Fernando Bentivoglio">
           </a>
           <p>Boas escolhas começam com uma boa conversa.</p>
         </div>

@@ -95,7 +95,7 @@ function createFact(label, value) {
 }
 
 function imagePath(propertyId, filename) {
-  return `assets/${propertyId}/${encodeURIComponent(filename)}`;
+  return `assets/images/${propertyId}/${encodeURIComponent(filename)}`;
 }
 
 function renderProperty(propertyId) {
