@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#151515">
+    <meta
+      name="description"
+      content="Conheça os detalhes do imóvel selecionado e fale com Fernando Bentivoglio."
+    >
+    <title>Detalhes do imóvel | Fernando Bentivoglio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="style.css">
+    <script src="contact-config.js" defer></script>
+    <script src="site.js" defer></script>
+    <script src="imovel.js" defer></script>
+  </head>
+  <body class="detail-page">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html#inicio" aria-label="Fernando Bentivoglio, início">
+          <img src="assets/logo-fb-trans.png" alt="Fernando Bentivoglio">
+        </a>
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-label="Abrir menu"
+          aria-expanded="false"
+          aria-controls="site-navigation"
+        >
+          <span></span>
+          <span></span>
+        </button>
+        <nav class="site-navigation" id="site-navigation" aria-label="Navegação principal">
+          <a href="index.html#imoveis">Imóveis</a>
+          <a href="index.html#sobre">Sobre</a>
+          <a href="index.html#diferenciais">Diferenciais</a>
+          <a class="nav-contact" href="index.html#contato">
+            Vamos conversar
+            <span aria-hidden="true">↗</span>
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="conteudo" class="detail-main">
+      <div class="container detail-container">
+        <a class="detail-back" href="index.html#imoveis">
+          <span aria-hidden="true">←</span>
+          Voltar aos imóveis
+        </a>
+
+        <section class="detail-property" aria-live="polite">
+          <div class="detail-error" id="detail-error" hidden>
+            <h1>Imóvel não encontrado</h1>
+            <p>Escolha um dos imóveis disponíveis na página inicial.</p>
+            <a class="button button-gold" href="index.html#imoveis">Ver imóveis</a>
+          </div>
+
+          <div id="property-details" hidden>
+            <div class="detail-heading">
+              <div>
+                <p class="eyebrow"><span></span><span id="detail-location"></span></p>
+                <h1 id="detail-title"></h1>
+              </div>
+              <p class="detail-price" id="detail-price"></p>
+            </div>
+
+            <div class="detail-layout">
+              <section class="detail-gallery" aria-label="Galeria de fotos do imóvel">
+                <div class="detail-main-image-wrap">
+                  <img id="detail-main-image" class="detail-main-image" alt="">
+                  <span class="detail-photo-count" id="detail-photo-count"></span>
+                </div>
+                <div
+                  class="detail-thumbnails"
+                  id="detail-thumbnails"
+                  aria-label="Escolha uma foto"
+                ></div>
+                <p class="detail-gallery-caption">Fotos do imóvel</p>
+              </section>
+
+              <aside class="detail-sidebar">
+                <p class="detail-sidebar-label">Valor demonstrativo</p>
+                <p class="detail-sidebar-price" id="detail-sidebar-price"></p>
+                <p class="detail-sidebar-location" id="detail-sidebar-location"></p>
+                <a
+                  class="button button-gold detail-whatsapp"
+                  href="index.html#contato"
+                  data-whatsapp-cta
+                >
+                  Tenho interesse
+                  <span aria-hidden="true">↗</span>
+                </a>
+                <p class="detail-contact-note">
+                  Você será direcionado ao catálogo de imóveis no WhatsApp.
+                </p>
+                <p class="contact-status" id="contact-status" role="status" aria-live="polite"></p>
+                <a class="detail-back-secondary" href="index.html#imoveis">
+                  Ver outros imóveis
+                  <span aria-hidden="true">→</span>
+                </a>
+              </aside>
+            </div>
+
+            <section class="detail-information" aria-labelledby="detail-information-title">
+              <div class="detail-section-heading">
+                <p class="eyebrow"><span></span> Informações do imóvel</p>
+                <h2 id="detail-information-title">Detalhes para escolher <em>com clareza.</em></h2>
+              </div>
+              <dl class="detail-facts" id="detail-facts"></dl>
+
+              <div class="detail-description">
+                <h2>Sobre este imóvel</h2>
+                <p id="detail-description"></p>
+              </div>
+
+              <div class="detail-features" id="detail-features-section" hidden>
+                <h2>Características</h2>
+                <ul id="detail-features"></ul>
+              </div>
+            </section>
+            <p class="detail-disclaimer">
+              Esta é uma demonstração. Preço e disponibilidade devem ser confirmados.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-main">
+        <div class="footer-brand">
+          <a class="brand" href="index.html#inicio" aria-label="Fernando Bentivoglio, início">
+            <img src="assets/logo-fb-trans.png" alt="Fernando Bentivoglio">
+          </a>
+          <p>Boas escolhas começam com uma boa conversa.</p>
+        </div>
+        <div class="footer-column">
+          <h2>Navegação</h2>
+          <a href="index.html#imoveis">Imóveis em destaque</a>
+          <a href="index.html#sobre">Sobre o Fernando</a>
+          <a href="index.html#diferenciais">Diferenciais</a>
+        </div>
+        <div class="footer-column">
+          <h2>Atuação</h2>
+          <span>Goiânia e região</span>
+          <span>Casas e apartamentos</span>
+          <span>Ágio e financiamentos</span>
+        </div>
+        <div class="footer-column footer-contact">
+          <h2>Contato</h2>
+          <a href="index.html#contato">Solicitar atendimento</a>
+          <span>Catálogo de imóveis no WhatsApp</span>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <p>© <span id="current-year">2026</span> Fernando Bentivoglio. Prévia demonstrativa.</p>
+        <a href="index.html#inicio">Voltar ao início <span aria-hidden="true">↑</span></a>
+      </div>
+    </footer>
+  </body>
+</html>
