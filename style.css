@@ -484,17 +484,22 @@ p {
 
 .property-cta {
   display: flex;
+  width: 100%;
+  min-height: 46px;
   align-items: center;
   justify-content: space-between;
-  padding-top: 13px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
+  margin-top: 16px;
+  padding: 12px 15px;
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--gold);
+  font-size: 12px;
   font-weight: 600;
-  transition: color 180ms ease;
+  transition: background-color 180ms ease;
 }
 
 .property-cta:hover {
-  color: var(--gold-dark);
+  background: #b58f49;
 }
 
 .property-cta span {
