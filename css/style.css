@@ -1175,6 +1175,12 @@ p {
     gap: 28px;
   }
 
+  .contact-action {
+    align-self: center;
+    margin-left: 0;
+    text-align: center;
+  }
+
   .contact h2 {
     font-size: clamp(38px, 10vw, 49px);
   }
