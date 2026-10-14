@@ -17,6 +17,11 @@
     >
     <link rel="icon" type="image/png" href="assets/images/logo-fb-trans.png">
     <link rel="stylesheet" href="css/style.css">
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+    <script src="js/supabase-client.js" defer></script>
     <script src="js/contact-config.js" defer></script>
     <script src="js/site.js" defer></script>
     <script src="js/property-details.js" defer></script>
@@ -59,6 +64,7 @@
         </a>
 
         <section class="detail-property" aria-live="polite">
+          <p class="detail-loading" id="detail-loading" role="status">Carregando imóvel…</p>
           <div class="detail-error" id="detail-error" hidden>
             <h1>Imóvel não encontrado</h1>
             <p>Escolha um dos imóveis disponíveis na página inicial.</p>
@@ -77,19 +83,26 @@
             <div class="detail-layout">
               <section class="detail-gallery" aria-label="Galeria de fotos do imóvel">
                 <div class="detail-main-image-wrap">
-                  <img id="detail-main-image" class="detail-main-image" alt="">
-                  <span class="detail-photo-count" id="detail-photo-count"></span>
+                  <img id="detail-main-image" class="detail-main-image" alt="" hidden>
+                  <span class="detail-photo-count" id="detail-photo-count" hidden></span>
                 </div>
                 <div
                   class="detail-thumbnails"
                   id="detail-thumbnails"
                   aria-label="Escolha uma foto"
                 ></div>
+                <p
+                  class="detail-gallery-status"
+                  id="detail-gallery-status"
+                  role="status"
+                  aria-live="polite"
+                  hidden
+                ></p>
                 <p class="detail-gallery-caption">Fotos do imóvel</p>
               </section>
 
               <aside class="detail-sidebar">
-                <p class="detail-sidebar-label">Valor demonstrativo</p>
+                <p class="detail-sidebar-label">Valor anunciado</p>
                 <p class="detail-sidebar-price" id="detail-sidebar-price"></p>
                 <p class="detail-sidebar-location" id="detail-sidebar-location"></p>
                 <a
@@ -129,7 +142,7 @@
               </div>
             </section>
             <p class="detail-disclaimer">
-              Esta é uma demonstração. Preço e disponibilidade devem ser confirmados.
+              Preço e disponibilidade devem ser confirmados diretamente com o corretor.
             </p>
           </div>
         </section>

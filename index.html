@@ -18,6 +18,11 @@
     <link rel="preload" as="image" href="assets/images/FERNANDO-HERO.png" fetchpriority="high">
     <link rel="icon" type="image/png" href="assets/images/logo-fb-trans.png">
     <link rel="stylesheet" href="css/style.css">
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+    <script src="js/supabase-client.js" defer></script>
     <script src="js/contact-config.js" defer></script>
     <script src="js/site.js" defer></script>
     <script src="js/home.js" defer></script>
@@ -100,119 +105,14 @@
             </p>
           </div>
 
-          <div class="property-grid">
-            <a
-              class="property-card"
-              href="imovel.html?id=casa1"
-              aria-label="Ver detalhes da casa no Parqville Pinheiros"
-            >
-              <div class="property-image-link">
-                <img
-                  class="property-image"
-                  src="assets/images/casa1/WhatsApp%20Image%202026-10-09%20at%2022.07.29.jpeg"
-                  alt="Fachada contemporânea da casa no Parqville Pinheiros"
-                  loading="lazy"
-                  width="720"
-                  height="480"
-                >
-                <span class="property-label">Casa à venda</span>
-                <span class="image-arrow" aria-hidden="true">↗</span>
-              </div>
-              <div class="property-content">
-                <p class="property-location">Aparecida de Goiânia · Parqville Pinheiros</p>
-                <h3>Espaço e lazer para viver bem</h3>
-                <p class="property-price">R$ 1.300.000</p>
-                <div class="property-facts" aria-label="Características principais">
-                  <span><strong>3</strong> suítes</span>
-                  <span><strong>163 m²</strong> construídos</span>
-                  <span><strong>338 m²</strong> terreno</span>
-                </div>
-                <p class="property-description">
-                  Suíte master com closet, sala com pé-direito duplo, cozinha gourmet com ilha
-                  e piscina aquecida.
-                </p>
-                <span class="property-cta">
-                  Ver detalhes
-                  <span aria-hidden="true">→</span>
-                </span>
-              </div>
-            </a>
+          <div class="property-grid" id="property-grid"></div>
 
-            <a
-              class="property-card"
-              href="imovel.html?id=casa2"
-              aria-label="Ver detalhes da casa no Residencial Santa Efigênia"
-            >
-              <div class="property-image-link">
-                <img
-                  class="property-image"
-                  src="assets/images/casa2/WhatsApp%20Image%202026-10-09%20at%2022.10.37.jpeg"
-                  alt="Fachada da casa no Residencial Santa Efigênia"
-                  loading="lazy"
-                  width="720"
-                  height="480"
-                >
-                <span class="property-label">Casa à venda</span>
-                <span class="image-arrow" aria-hidden="true">↗</span>
-              </div>
-              <div class="property-content">
-                <p class="property-location">Goiânia · Residencial Santa Efigênia</p>
-                <h3>Seu lugar para começar</h3>
-                <p class="property-price">R$ 225.000</p>
-                <div class="property-facts" aria-label="Características principais">
-                  <span><strong>2</strong> quartos</span>
-                  <span><strong>65,83 m²</strong> construídos</span>
-                  <span><strong>2</strong> banheiros</span>
-                </div>
-                <p class="property-description">
-                  Uma suíte e área gourmet com varanda para aproveitar bons momentos em casa.
-                </p>
-                <span class="property-cta">
-                  Ver detalhes
-                  <span aria-hidden="true">→</span>
-                </span>
-              </div>
-            </a>
-
-            <a
-              class="property-card"
-              href="imovel.html?id=casa3"
-              aria-label="Ver detalhes da casa no Residencial Terrabela Cerrado"
-            >
-              <div class="property-image-link">
-                <img
-                  class="property-image"
-                  src="assets/images/casa3/WhatsApp%20Image%202026-10-09%20at%2022.20.14.jpeg"
-                  alt="Fachada da casa no Residencial Terrabela Cerrado"
-                  loading="lazy"
-                  width="720"
-                  height="480"
-                >
-                <span class="property-label">Casa à venda</span>
-                <span class="image-arrow" aria-hidden="true">↗</span>
-              </div>
-              <div class="property-content">
-                <p class="property-location">Senador Canedo · Residencial Terrabela Cerrado</p>
-                <h3>Conforto em cada detalhe</h3>
-                <p class="property-price">R$ 290.000</p>
-                <div class="property-facts" aria-label="Características principais">
-                  <span><strong>3</strong> quartos</span>
-                  <span><strong>85,77 m²</strong> construídos</span>
-                  <span><strong>125 m²</strong> terreno</span>
-                </div>
-                <p class="property-description">
-                  Uma suíte, garagem coberta e área gourmet para reunir quem você gosta.
-                </p>
-                <span class="property-cta">
-                  Ver detalhes
-                  <span aria-hidden="true">→</span>
-                </span>
-              </div>
-            </a>
-          </div>
+          <p class="listing-status" id="property-list-status" role="status" aria-live="polite">
+            Carregando imóveis…
+          </p>
 
           <p class="listing-disclaimer">
-            Valores e disponibilidade são apenas demonstrativos e devem ser confirmados.
+            Preços e disponibilidade devem ser confirmados diretamente com o corretor.
           </p>
         </div>
       </section>

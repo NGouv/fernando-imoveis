@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#071D3B">
+    <meta
+      name="description"
+      content="Acesso administrativo do Projeto Imobiliária — NG."
+    >
+    <title>Área administrativa | Fernando Bentivoglio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="icon" type="image/png" href="../assets/images/logo-fb-trans.png">
+    <link rel="stylesheet" href="admin.css">
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+      defer
+    ></script>
+    <script src="../js/supabase-client.js" defer></script>
+    <script src="admin.js" defer></script>
+  </head>
+  <body>
+    <main class="admin-shell">
+      <a class="admin-brand" href="../index.html" aria-label="Voltar ao site">
+        <img src="../assets/images/logo-fb-trans.png" alt="Fernando Bentivoglio">
+      </a>
+
+      <p class="admin-status" id="auth-status" role="status" aria-live="polite">
+        Verificando sessão…
+      </p>
+
+      <section class="admin-card" id="login-view" aria-labelledby="login-title" hidden>
+        <p class="admin-eyebrow">Acesso restrito</p>
+        <h1 id="login-title">Área administrativa</h1>
+        <p class="admin-intro">Entre com a conta autorizada para continuar.</p>
+
+        <form id="login-form">
+          <label for="login-email">E-mail</label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autocomplete="username"
+            inputmode="email"
+            required
+          >
+
+          <label for="login-password">Senha</label>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          >
+
+          <p class="admin-message" id="auth-message" role="alert" hidden></p>
+          <button class="admin-button" id="login-submit" type="submit">Entrar</button>
+        </form>
+      </section>
+
+      <section class="admin-card admin-dashboard" id="dashboard-view" aria-labelledby="dashboard-title" hidden>
+        <div class="admin-dashboard-heading">
+          <div>
+            <p class="admin-eyebrow">Acesso autorizado</p>
+            <h1 id="dashboard-title">Área administrativa</h1>
+          </div>
+          <button class="admin-button admin-button-secondary" id="logout-button" type="button">
+            Sair da conta
+          </button>
+        </div>
+        <p class="admin-message" id="dashboard-message" role="status" aria-live="polite" hidden></p>
+
+        <section class="property-management" aria-labelledby="property-management-title">
+          <div class="property-section-heading">
+            <div>
+              <p class="admin-eyebrow">Catálogo</p>
+              <h2 id="property-management-title">Imóveis cadastrados</h2>
+            </div>
+            <div class="property-section-actions">
+              <button class="admin-button admin-button-secondary" id="refresh-properties" type="button">
+                Atualizar lista
+              </button>
+              <button class="admin-button" id="show-property-form" type="button">
+                Cadastrar imóvel
+              </button>
+            </div>
+          </div>
+
+          <p class="property-list-status" id="property-list-status" role="status" aria-live="polite">
+            Carregando imóveis…
+          </p>
+          <ul class="property-list" id="property-list" aria-label="Imóveis cadastrados"></ul>
+
+          <form class="property-form" id="property-form" hidden>
+            <div class="property-form-heading">
+              <div>
+                <p class="admin-eyebrow">Novo cadastro</p>
+                <h2>Cadastrar imóvel</h2>
+              </div>
+              <button
+                class="admin-button admin-button-secondary"
+                id="cancel-property-form"
+                type="button"
+              >
+                Cancelar
+              </button>
+            </div>
+
+            <div class="property-form-grid">
+              <div class="property-field property-field-wide">
+                <label for="property-title">Título *</label>
+                <input id="property-title" name="title" type="text" required>
+              </div>
+
+              <div class="property-field">
+                <label for="property-slug">Slug *</label>
+                <input
+                  id="property-slug"
+                  name="slug"
+                  type="text"
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  aria-describedby="property-slug-help"
+                  required
+                >
+                <small id="property-slug-help">URL amigável: letras minúsculas, números e hífens.</small>
+              </div>
+
+              <div class="property-field">
+                <label for="property-status">Status *</label>
+                <select id="property-status" name="status" required>
+                  <option value="draft" selected>Rascunho</option>
+                  <option value="published">Publicado</option>
+                  <option value="archived">Arquivado</option>
+                </select>
+              </div>
+
+              <div class="property-field property-field-wide">
+                <label for="property-description">Descrição</label>
+                <textarea id="property-description" name="description" rows="4"></textarea>
+              </div>
+
+              <div class="property-field">
+                <label for="property-type">Tipo *</label>
+                <select id="property-type" name="property_type" required>
+                  <option value="">Selecione</option>
+                  <option value="house">Casa</option>
+                  <option value="apartment">Apartamento</option>
+                  <option value="land">Terreno</option>
+                  <option value="commercial">Comercial</option>
+                  <option value="other">Outro</option>
+                </select>
+              </div>
+
+              <div class="property-field">
+                <label for="property-purpose">Finalidade *</label>
+                <select id="property-purpose" name="purpose" required>
+                  <option value="">Selecione</option>
+                  <option value="sale">Venda</option>
+                  <option value="rent">Aluguel</option>
+                  <option value="assignment">Ágio</option>
+                </select>
+              </div>
+
+              <div class="property-field">
+                <label for="property-price">Preço (R$) *</label>
+                <input id="property-price" name="price" type="number" min="0" max="999999999999.99" step="0.01" required>
+              </div>
+
+              <div class="property-field">
+                <label for="property-city">Cidade *</label>
+                <input id="property-city" name="city" type="text" required>
+              </div>
+
+              <div class="property-field">
+                <label for="property-state">Estado (UF) *</label>
+                <input
+                  id="property-state"
+                  name="state"
+                  type="text"
+                  minlength="2"
+                  maxlength="2"
+                  pattern="[A-Z]{2}"
+                  autocomplete="address-level1"
+                  required
+                >
+              </div>
+
+              <div class="property-field">
+                <label for="property-neighborhood">Bairro</label>
+                <input id="property-neighborhood" name="neighborhood" type="text">
+              </div>
+
+              <div class="property-field">
+                <label for="property-built-area">Área construída (m²)</label>
+                <input id="property-built-area" name="built_area" type="number" min="0.01" max="99999999.99" step="0.01">
+              </div>
+
+              <div class="property-field">
+                <label for="property-land-area">Área do terreno (m²)</label>
+                <input id="property-land-area" name="land_area" type="number" min="0.01" max="99999999.99" step="0.01">
+              </div>
+
+              <div class="property-field">
+                <label for="property-bedrooms">Quartos</label>
+                <input id="property-bedrooms" name="bedrooms" type="number" min="0" max="32767" step="1">
+              </div>
+
+              <div class="property-field">
+                <label for="property-suites">Suítes</label>
+                <input id="property-suites" name="suites" type="number" min="0" max="32767" step="1">
+              </div>
+
+              <div class="property-field">
+                <label for="property-bathrooms">Banheiros</label>
+                <input id="property-bathrooms" name="bathrooms" type="number" min="0" max="32767" step="1">
+              </div>
+
+              <div class="property-field property-field-wide">
+                <label for="property-features">Características</label>
+                <textarea
+                  id="property-features"
+                  name="features"
+                  rows="3"
+                  aria-describedby="property-features-help"
+                ></textarea>
+                <small id="property-features-help">Informe uma característica por linha.</small>
+              </div>
+            </div>
+
+            <p class="admin-message" id="property-form-message" role="alert" hidden></p>
+            <div class="property-form-actions">
+              <button class="admin-button admin-button-secondary" id="cancel-property-form-bottom" type="button">
+                Cancelar
+              </button>
+              <button class="admin-button" id="save-property" type="submit">Salvar imóvel</button>
+            </div>
+          </form>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
