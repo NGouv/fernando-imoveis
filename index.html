@@ -43,8 +43,9 @@
           aria-expanded="false"
           aria-controls="site-navigation"
         >
-          <span></span>
-          <span></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
         </button>
 
         <nav class="site-navigation" id="site-navigation" aria-label="Navegação principal">
@@ -105,7 +106,45 @@
             </p>
           </div>
 
-          <div class="property-grid" id="property-grid"></div>
+          <div class="property-carousel">
+            <div
+              class="property-carousel-controls"
+              id="property-carousel-controls"
+              role="group"
+              aria-label="Navegação dos imóveis em destaque"
+              hidden
+            >
+              <button
+                class="property-carousel-button"
+                id="property-carousel-prev"
+                type="button"
+                aria-label="Ver imóveis anteriores"
+                aria-controls="property-grid"
+                disabled
+              >
+                <span aria-hidden="true">←</span>
+              </button>
+              <button
+                class="property-carousel-button"
+                id="property-carousel-next"
+                type="button"
+                aria-label="Ver próximos imóveis"
+                aria-controls="property-grid"
+                disabled
+              >
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+            <div
+              class="property-carousel-viewport"
+              id="property-carousel-viewport"
+              role="region"
+              aria-label="Cartões de imóveis em destaque"
+              tabindex="0"
+            >
+              <div class="property-grid" id="property-grid"></div>
+            </div>
+          </div>
 
           <p class="listing-status" id="property-list-status" role="status" aria-live="polite">
             Carregando imóveis…

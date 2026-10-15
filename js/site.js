@@ -1,6 +1,7 @@
 const whatsappUrl = window.FERNANDO_WHATSAPP_URL;
 const menuToggle = document.querySelector(".menu-toggle");
 const navigation = document.querySelector("#site-navigation");
+const siteHeader = document.querySelector(".site-header");
 const currentYear = document.querySelector("#current-year");
 
 function closeMenu() {
@@ -25,7 +26,20 @@ if (menuToggle && navigation) {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMenu();
+    if (event.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
+      closeMenu();
+      menuToggle.focus();
+    }
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (
+      menuToggle.getAttribute("aria-expanded") === "true" &&
+      siteHeader &&
+      !siteHeader.contains(event.target)
+    ) {
+      closeMenu();
+    }
   });
 
   window.addEventListener("resize", () => {

@@ -1,6 +1,11 @@
 const propertyGrid = document.querySelector("#property-grid");
 const propertyListStatus = document.querySelector("#property-list-status");
+const carouselViewport = document.querySelector("#property-carousel-viewport");
+const carouselControls = document.querySelector("#property-carousel-controls");
+const carouselPrevious = document.querySelector("#property-carousel-prev");
+const carouselNext = document.querySelector("#property-carousel-next");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let carouselUpdateFrame = 0;
 const revealObserver =
   "IntersectionObserver" in window && !reduceMotion
     ? new IntersectionObserver(
@@ -28,6 +33,55 @@ function observeRevealItems(items) {
 observeRevealItems(
   document.querySelectorAll(".about-visual, .about-copy, .differential-item"),
 );
+
+function updateCarouselControls() {
+  if (
+    !carouselViewport ||
+    !carouselControls ||
+    !carouselPrevious ||
+    !carouselNext
+  ) {
+    return;
+  }
+
+  const canScroll = carouselViewport.scrollWidth > carouselViewport.clientWidth + 1;
+  carouselControls.hidden = !canScroll;
+  carouselPrevious.disabled = !canScroll || carouselViewport.scrollLeft <= 1;
+  carouselNext.disabled =
+    !canScroll ||
+    carouselViewport.scrollLeft + carouselViewport.clientWidth >=
+      carouselViewport.scrollWidth - 1;
+}
+
+function scheduleCarouselControlUpdate() {
+  if (carouselUpdateFrame) window.cancelAnimationFrame(carouselUpdateFrame);
+  carouselUpdateFrame = window.requestAnimationFrame(() => {
+    carouselUpdateFrame = 0;
+    updateCarouselControls();
+  });
+}
+
+function scrollCarousel(direction) {
+  if (!carouselViewport || !propertyGrid) return;
+
+  const card = propertyGrid.querySelector(".property-card");
+  if (!card) return;
+
+  const styles = window.getComputedStyle(propertyGrid);
+  const gap = Number.parseFloat(styles.columnGap) || 0;
+  const distance = card.getBoundingClientRect().width + gap;
+  carouselViewport.scrollBy({
+    left: direction * distance,
+    behavior: reduceMotion ? "auto" : "smooth",
+  });
+}
+
+carouselPrevious?.addEventListener("click", () => scrollCarousel(-1));
+carouselNext?.addEventListener("click", () => scrollCarousel(1));
+carouselViewport?.addEventListener("scroll", scheduleCarouselControlUpdate, {
+  passive: true,
+});
+window.addEventListener("resize", scheduleCarouselControlUpdate);
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-BR", {
@@ -242,8 +296,10 @@ async function loadPublishedProperties() {
   const cards = properties.map((property) =>
     createPropertyCard(property, coverByProperty.get(property.id)),
   );
+  propertyGrid.dataset.cardCount = String(cards.length);
   propertyGrid.replaceChildren(...cards);
   observeRevealItems(cards);
+  scheduleCarouselControlUpdate();
 
   const failedCoverCount = properties.filter(
     (property) => !coverByProperty.has(property.id),

@@ -145,6 +145,68 @@ img {
   display: none;
 }
 
+.property-carousel {
+  min-width: 0;
+}
+
+.property-carousel-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: -8px 0 18px;
+}
+
+.property-carousel-controls[hidden] {
+  display: none;
+}
+
+.property-carousel-button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--white);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background-color 180ms ease,
+    opacity 180ms ease;
+}
+
+.property-carousel-button:not(:disabled):hover {
+  border-color: var(--ink);
+  color: var(--white);
+  background: var(--ink);
+}
+
+.property-carousel-button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.property-carousel-button span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.property-carousel-viewport {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.property-carousel-viewport::-webkit-scrollbar {
+  display: none;
+}
+
 .hero {
   position: relative;
   display: flex;
@@ -372,17 +434,31 @@ p {
 }
 
 .property-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  width: 100%;
   gap: 22px;
+}
+
+.property-grid[data-card-count="1"] {
+  justify-content: center;
+}
+
+.property-grid[data-card-count="1"] .property-card {
+  flex-basis: min(100%, 520px);
+}
+
+.property-grid[data-card-count="2"] .property-card {
+  flex-basis: calc((100% - 22px) / 2);
 }
 
 .property-card {
   min-width: 0;
+  flex: 0 0 calc((100% - 44px) / 3);
   color: var(--white);
   background: var(--navy-secondary);
   border-bottom: 1px solid rgba(245, 247, 250, 0.2);
   transition: border-color 180ms ease;
+  scroll-snap-align: start;
 }
 
 .property-card:hover {
@@ -546,21 +622,29 @@ p {
 
 .about-layout {
   display: grid;
-  grid-template-columns: 1fr 0.86fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
   align-items: center;
   gap: clamp(56px, 9vw, 120px);
 }
 
+.about-layout > * {
+  min-width: 0;
+}
+
 .about-visual {
   position: relative;
-  padding: 0 34px 34px 0;
+  min-width: 0;
+  padding: 0 22px 22px 0;
 }
 
 .about-image {
   position: relative;
-  aspect-ratio: 0.95;
+  aspect-ratio: 1;
   overflow: hidden;
+  border: 1px solid rgba(7, 29, 59, 0.12);
+  border-radius: 14px;
   background: var(--navy-secondary);
+  box-shadow: 0 18px 42px rgba(7, 29, 59, 0.12);
 }
 
 .about-image img {
@@ -781,11 +865,15 @@ p {
   }
 
   .property-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .property-card {
+    flex-basis: calc((100% - 22px) / 2);
   }
 
   .about-layout {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
     gap: clamp(32px, 6vw, 56px);
   }
 
@@ -826,6 +914,18 @@ p {
   }
 }
 
+@media (max-width: 760px) {
+  .about-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(34px, 6vw, 48px);
+  }
+
+  .about-visual {
+    width: min(100%, 460px);
+    margin-inline: auto;
+  }
+}
+
 @media (max-width: 640px) {
   .container {
     width: min(100% - 40px, 480px);
@@ -861,7 +961,7 @@ p {
   .menu-toggle span {
     width: 17px;
     height: 1px;
-    background: var(--ink);
+    background: var(--white);
     transition:
       transform 180ms ease,
       translate 180ms ease;
@@ -870,6 +970,10 @@ p {
   .menu-toggle[aria-expanded="true"] span:first-child {
     translate: 0 3.5px;
     transform: rotate(45deg);
+  }
+
+  .menu-toggle[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
   }
 
   .menu-toggle[aria-expanded="true"] span:last-child {
@@ -982,8 +1086,15 @@ p {
   }
 
   .property-grid {
-    grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .property-card {
+    flex-basis: 100%;
+  }
+
+  .property-grid[data-card-count="2"] .property-card {
+    flex-basis: 100%;
   }
 
   .property-content {
@@ -999,19 +1110,6 @@ p {
   .listing-disclaimer {
     text-align: left;
     line-height: 1.7;
-  }
-
-  .about-layout {
-    grid-template-columns: 1fr;
-    gap: 48px;
-  }
-
-  .about-visual {
-    max-width: 440px;
-  }
-
-  .about-image {
-    aspect-ratio: 1.15;
   }
 
   .about-copy > p:not(.eyebrow) {
