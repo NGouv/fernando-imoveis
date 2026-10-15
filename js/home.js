@@ -147,10 +147,6 @@ function createPropertyCard(property, coverImage) {
   ].filter(Boolean);
   factItems.slice(0, 3).forEach((fact) => facts.append(fact));
 
-  const description = document.createElement("p");
-  description.className = "property-description";
-  description.textContent = property.description || "Consulte o corretor para mais informações.";
-
   const cta = document.createElement("span");
   cta.className = "property-cta";
   cta.append(document.createTextNode("Ver detalhes"));
@@ -160,7 +156,7 @@ function createPropertyCard(property, coverImage) {
   ctaArrow.textContent = "→";
   cta.append(ctaArrow);
 
-  content.append(location, title, price, facts, description, cta);
+  content.append(location, title, price, facts, cta);
   card.append(imageLink, content);
   return card;
 }

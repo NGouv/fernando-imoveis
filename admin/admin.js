@@ -19,6 +19,8 @@ const propertyCityInput = document.querySelector("#property-city");
 const showPropertyFormButton = document.querySelector("#show-property-form");
 const refreshPropertiesButton = document.querySelector("#refresh-properties");
 const savePropertyButton = document.querySelector("#save-property");
+const propertyFormEyebrow = document.querySelector("#property-form-eyebrow");
+const propertyFormTitle = document.querySelector("#property-form-title");
 const photoManagerDialog = document.querySelector("#photo-manager-dialog");
 const photoManagerTitle = document.querySelector("#photo-manager-title");
 const closePhotoManagerButton = document.querySelector("#close-photo-manager");
@@ -42,6 +44,7 @@ let hasVerifiedAdminSession = false;
 let endingSession = false;
 let authFlowId = 0;
 let propertySlugWasEdited = false;
+let editingPropertyId = null;
 let propertiesById = new Map();
 let activePhotoProperty = null;
 let activePhotos = [];
@@ -595,11 +598,19 @@ function createPropertyListItem(property) {
   managePhotos.className = "admin-button admin-button-secondary";
   managePhotos.type = "button";
   managePhotos.dataset.propertyId = property.id;
+  managePhotos.dataset.propertyAction = "photos";
   managePhotos.textContent = "Gerenciar fotos";
+
+  const editProperty = document.createElement("button");
+  editProperty.className = "admin-button admin-button-secondary";
+  editProperty.type = "button";
+  editProperty.dataset.propertyId = property.id;
+  editProperty.dataset.propertyAction = "edit";
+  editProperty.textContent = "Editar imóvel";
 
   const actions = document.createElement("div");
   actions.className = "property-list-actions";
-  actions.append(managePhotos);
+  actions.append(editProperty, managePhotos);
 
   item.append(details, status, actions);
   return item;
@@ -656,13 +667,71 @@ function clearPropertyFormMessage() {
   propertyFormMessage.dataset.kind = "";
 }
 
+function setPropertyFormMode(property = null) {
+  editingPropertyId = property?.id || null;
+  propertyFormEyebrow.textContent = property ? "Edição de cadastro" : "Novo cadastro";
+  propertyFormTitle.textContent = property ? "Editar imóvel" : "Cadastrar imóvel";
+  savePropertyButton.textContent = property ? "Salvar alterações" : "Salvar imóvel";
+}
+
 function resetPropertyForm() {
   propertyForm.reset();
   propertyForm.elements.namedItem("status").value = "draft";
+  setPropertyFormMode();
   propertySlugWasEdited = false;
   propertySlugInput.setCustomValidity("");
   clearPropertyFormMessage();
   propertyForm.hidden = true;
+}
+
+async function editProperty(propertyId, editButton) {
+  if (editButton) editButton.disabled = true;
+  setDashboardMessage("Carregando os dados do imóvel…", "success");
+
+  try {
+    const { data: property, error } = await withAuthTimeout(
+      supabaseClient
+        .from("properties")
+        .select(
+          "id, slug, title, description, property_type, purpose, price, city, state, neighborhood, built_area, land_area, bedrooms, suites, bathrooms, features, status",
+        )
+        .eq("id", propertyId)
+        .maybeSingle(),
+      "A consulta do imóvel excedeu o tempo limite.",
+    );
+    if (error) throw error;
+    if (!property) {
+      throw new Error("O imóvel não foi encontrado. Atualize a lista e tente novamente.");
+    }
+
+    propertyForm.reset();
+    Object.entries(property).forEach(([name, value]) => {
+      const field = propertyForm.elements.namedItem(name);
+      if (!field) return;
+      if (name === "features") {
+        field.value = Array.isArray(value) ? value.join("\n") : "";
+      } else {
+        field.value = value === null || value === undefined ? "" : String(value);
+      }
+    });
+    setPropertyFormMode(property);
+    propertySlugWasEdited = true;
+    propertySlugInput.setCustomValidity("");
+    clearPropertyFormMessage();
+    setDashboardMessage("");
+    propertyForm.hidden = false;
+    propertyTitleInput.focus();
+    propertyForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (error) {
+    console.error("Falha ao carregar os dados para edição.", error);
+    setDashboardMessage(
+      error.message === "O imóvel não foi encontrado. Atualize a lista e tente novamente."
+        ? error.message
+        : describePropertyError(error),
+    );
+  } finally {
+    if (editButton) editButton.disabled = false;
+  }
 }
 
 function parseOptionalNumber(value) {
@@ -722,6 +791,7 @@ function setDashboardMessage(message, kind = "error") {
 showPropertyFormButton.addEventListener("click", () => {
   propertyForm.reset();
   propertyForm.elements.namedItem("status").value = "draft";
+  setPropertyFormMode();
   propertySlugWasEdited = false;
   propertySlugInput.setCustomValidity("");
   clearPropertyFormMessage();
@@ -744,10 +814,14 @@ propertyList.addEventListener("click", (event) => {
     setDashboardMessage("Atualize a lista e tente abrir as fotos novamente.");
     return;
   }
-  openPhotoManager(property).catch((error) => {
-    console.error("Falha ao abrir o gerenciamento de fotos.", error);
-    setPhotoManagerStatus("Não foi possível abrir as fotos deste imóvel.");
-  });
+  if (button.dataset.propertyAction === "edit") {
+    editProperty(property.id, button);
+  } else if (button.dataset.propertyAction === "photos") {
+    openPhotoManager(property).catch((error) => {
+      console.error("Falha ao abrir o gerenciamento de fotos.", error);
+      setPhotoManagerStatus("Não foi possível abrir as fotos deste imóvel.");
+    });
+  }
 });
 
 photoFileInput.addEventListener("change", () => {
@@ -843,14 +917,17 @@ propertyForm.addEventListener("submit", async (event) => {
 
   savePropertyButton.disabled = true;
   showPropertyFormButton.disabled = true;
+  const propertyIdToUpdate = editingPropertyId;
 
   try {
+    let slugQuery = supabaseClient
+      .from("properties")
+      .select("id")
+      .eq("slug", payload.slug);
+    if (propertyIdToUpdate) slugQuery = slugQuery.neq("id", propertyIdToUpdate);
+
     const { data: existingProperty, error: slugError } = await withAuthTimeout(
-      supabaseClient
-        .from("properties")
-        .select("id")
-        .eq("slug", payload.slug)
-        .maybeSingle(),
+      slugQuery.maybeSingle(),
       "A validação do slug excedeu o tempo limite.",
     );
     if (slugError) throw slugError;
@@ -860,23 +937,52 @@ propertyForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    const { error } = await withAuthTimeout(
-      supabaseClient.from("properties").insert(payload),
-      "O cadastro excedeu o tempo limite. Atualize a lista antes de tentar novamente.",
-    );
-    if (error) throw error;
+    if (propertyIdToUpdate) {
+      const { data, error } = await withAuthTimeout(
+        supabaseClient
+          .from("properties")
+          .update(payload)
+          .eq("id", propertyIdToUpdate)
+          .select("id"),
+        "A atualização excedeu o tempo limite. Atualize a lista para confirmar o resultado.",
+      );
+      if (error) throw error;
+      if (data?.length !== 1) {
+        throw new Error("O banco não confirmou a atualização do imóvel.");
+      }
+    } else {
+      const { error } = await withAuthTimeout(
+        supabaseClient.from("properties").insert(payload),
+        "O cadastro excedeu o tempo limite. Atualize a lista antes de tentar novamente.",
+      );
+      if (error) throw error;
+    }
 
     resetPropertyForm();
     setDashboardMessage(
-      payload.status === "draft"
-        ? "Imóvel cadastrado como rascunho. Ele não será exibido no site público."
-        : "Imóvel cadastrado com sucesso.",
+      propertyIdToUpdate
+        ? payload.status === "draft"
+          ? "Alterações salvas. O imóvel permanece como rascunho e não será exibido no site público."
+          : payload.status === "archived"
+            ? "Alterações salvas. O imóvel permanece arquivado e não será exibido no site público."
+            : "Alterações salvas e imóvel publicado."
+        : payload.status === "draft"
+          ? "Imóvel cadastrado como rascunho. Ele não será exibido no site público."
+          : payload.status === "archived"
+            ? "Imóvel cadastrado como arquivado. Ele não será exibido no site público."
+            : "Imóvel cadastrado com sucesso.",
       "success",
     );
     await loadProperties();
   } catch (error) {
-    console.error("Falha ao cadastrar imóvel.", error);
-    propertyFormMessage.textContent = describePropertyError(error);
+    console.error(
+      propertyIdToUpdate ? "Falha ao atualizar imóvel." : "Falha ao cadastrar imóvel.",
+      error,
+    );
+    propertyFormMessage.textContent =
+      error.message === "O banco não confirmou a atualização do imóvel."
+        ? error.message
+        : describePropertyError(error);
     propertyFormMessage.hidden = false;
   } finally {
     savePropertyButton.disabled = false;

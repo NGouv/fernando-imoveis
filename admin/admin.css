@@ -284,6 +284,8 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .property-list-actions .admin-button {
