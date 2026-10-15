@@ -19,12 +19,35 @@ const propertyCityInput = document.querySelector("#property-city");
 const showPropertyFormButton = document.querySelector("#show-property-form");
 const refreshPropertiesButton = document.querySelector("#refresh-properties");
 const savePropertyButton = document.querySelector("#save-property");
+const photoManagerDialog = document.querySelector("#photo-manager-dialog");
+const photoManagerTitle = document.querySelector("#photo-manager-title");
+const closePhotoManagerButton = document.querySelector("#close-photo-manager");
+const photoManagerStatus = document.querySelector("#photo-manager-status");
+const photoUploadForm = document.querySelector("#photo-upload-form");
+const photoFileInput = document.querySelector("#photo-file-input");
+const photoPreviewList = document.querySelector("#photo-preview-list");
+const uploadPhotosButton = document.querySelector("#upload-photos");
+const photoGalleryStatus = document.querySelector("#photo-gallery-status");
+const photoGallery = document.querySelector("#photo-gallery");
 
 const authTimeoutMs = 10000;
+const maxImageSize = 10 * 1024 * 1024;
+const allowedImageTypes = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+  ["image/avif", "avif"],
+]);
 let hasVerifiedAdminSession = false;
 let endingSession = false;
 let authFlowId = 0;
 let propertySlugWasEdited = false;
+let propertiesById = new Map();
+let activePhotoProperty = null;
+let activePhotos = [];
+let selectedPhotoFiles = [];
+let previewObjectUrls = [];
+let photoOperationInProgress = false;
 
 function withAuthTimeout(operation, message) {
   return new Promise((resolve, reject) => {
@@ -41,6 +64,459 @@ function withAuthTimeout(operation, message) {
       },
     );
   });
+}
+
+function setPhotoManagerStatus(message, kind = "error") {
+  photoManagerStatus.textContent = message;
+  photoManagerStatus.dataset.kind = kind;
+  photoManagerStatus.hidden = !message;
+}
+
+function revokePreviewObjectUrls() {
+  previewObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  previewObjectUrls = [];
+}
+
+function clearPhotoSelection() {
+  selectedPhotoFiles = [];
+  photoFileInput.value = "";
+  revokePreviewObjectUrls();
+  photoPreviewList.replaceChildren();
+  uploadPhotosButton.disabled = true;
+}
+
+function validatePhotoFiles(files) {
+  const errors = [];
+
+  files.forEach((file) => {
+    if (!allowedImageTypes.has(file.type)) {
+      errors.push(`“${file.name}”: formato não permitido. Use JPEG, PNG, WebP ou AVIF.`);
+    }
+    if (file.size > maxImageSize) {
+      errors.push(`“${file.name}”: excede o limite de 10 MB por imagem.`);
+    }
+    if (file.size === 0) {
+      errors.push(`“${file.name}”: o arquivo está vazio.`);
+    }
+  });
+
+  return errors;
+}
+
+function renderPhotoPreviews(files) {
+  revokePreviewObjectUrls();
+  photoPreviewList.replaceChildren();
+
+  const previewItems = files.map((file) => {
+    const item = document.createElement("li");
+    item.className = "photo-preview-item";
+    const image = document.createElement("img");
+    const url = URL.createObjectURL(file);
+    previewObjectUrls.push(url);
+    image.src = url;
+    image.alt = `Pré-visualização: ${file.name}`;
+    const name = document.createElement("span");
+    name.className = "photo-preview-name";
+    name.textContent = file.name;
+    item.append(image, name);
+    return item;
+  });
+  photoPreviewList.replaceChildren(...previewItems);
+}
+
+function describePhotoError(error) {
+  if (
+    error?.code === "42501" ||
+    error?.status === 401 ||
+    error?.status === 403 ||
+    error?.statusCode === "403"
+  ) {
+    return "A operação foi recusada pelas políticas do Supabase. Confirme sua sessão administrativa e as políticas do bucket e das tabelas.";
+  }
+  if (error?.code === "23505") {
+    return "O registro desta imagem já existe. Atualize a galeria antes de tentar novamente.";
+  }
+  if (error?.code === "23514" || error?.code === "22P02") {
+    return "Os dados da imagem não atendem às regras do banco. Confirme o imóvel e o caminho do arquivo.";
+  }
+  return "Não foi possível concluir a operação de fotos. Verifique a conexão e tente novamente.";
+}
+
+function setPhotoGalleryStatus(message) {
+  photoGalleryStatus.textContent = message;
+}
+
+function createPhotoGalleryItem(photo) {
+  const item = document.createElement("li");
+  item.className = "photo-gallery-item";
+  item.dataset.cover = String(photo.is_cover);
+
+  if (photo.url) {
+    const image = document.createElement("img");
+    image.src = photo.url;
+    image.alt = photo.alt_text || "Foto do imóvel";
+    image.loading = "lazy";
+    item.append(image);
+  } else {
+    const unavailable = document.createElement("p");
+    unavailable.className = "photo-gallery-status";
+    unavailable.textContent = "Prévia indisponível; a foto ainda pode ser removida.";
+    item.append(unavailable);
+  }
+
+  if (photo.is_cover) {
+    const badge = document.createElement("span");
+    badge.className = "photo-cover-badge";
+    badge.textContent = "Capa atual";
+    item.append(badge);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "photo-gallery-actions";
+  const coverButton = document.createElement("button");
+  coverButton.className = "admin-button admin-button-secondary";
+  coverButton.type = "button";
+  coverButton.dataset.photoAction = "cover";
+  coverButton.dataset.photoId = photo.id;
+  coverButton.textContent = photo.is_cover ? "Capa atual" : "Definir como capa";
+  coverButton.disabled = photo.is_cover || photoOperationInProgress;
+
+  const removeButton = document.createElement("button");
+  removeButton.className = "admin-button admin-button-secondary";
+  removeButton.type = "button";
+  removeButton.dataset.photoAction = "remove";
+  removeButton.dataset.photoId = photo.id;
+  removeButton.textContent = "Remover foto";
+  removeButton.disabled = photoOperationInProgress;
+
+  actions.append(coverButton, removeButton);
+  item.append(actions);
+  return item;
+}
+
+async function loadManagedPhotos() {
+  if (!activePhotoProperty) return;
+
+  setPhotoGalleryStatus("Carregando fotos…");
+  photoGallery.replaceChildren();
+
+  try {
+    const { data, error } = await withAuthTimeout(
+      supabaseClient
+        .from("property_images")
+        .select("id, property_id, storage_path, alt_text, sort_order, is_cover, created_at")
+        .eq("property_id", activePhotoProperty.id)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true }),
+      "A consulta das fotos excedeu o tempo limite.",
+    );
+    if (error) throw error;
+
+    const signedPhotos = await Promise.all(
+      (data || []).map(async (photo) => {
+        try {
+          const { data: signedData, error: signedError } = await supabaseClient
+            .storage
+            .from("property-images")
+            .createSignedUrl(photo.storage_path, 3600);
+          if (signedError || !signedData?.signedUrl) {
+            throw signedError || new Error("O Storage não retornou uma URL assinada.");
+          }
+          return { ...photo, url: signedData.signedUrl };
+        } catch (error) {
+          console.error(`Falha ao gerar URL assinada para a foto ${photo.id}.`, error);
+          return { ...photo, url: null };
+        }
+      }),
+    );
+
+    activePhotos = signedPhotos;
+    photoGallery.replaceChildren(...signedPhotos.map(createPhotoGalleryItem));
+    const unavailableCount = signedPhotos.filter((photo) => !photo.url).length;
+    if (signedPhotos.length === 0) {
+      setPhotoGalleryStatus("Este imóvel ainda não tem fotos salvas.");
+    } else if (unavailableCount > 0) {
+      setPhotoGalleryStatus(
+        `${signedPhotos.length} ${signedPhotos.length === 1 ? "foto salva" : "fotos salvas"}; não foi possível preparar ${unavailableCount === 1 ? "uma prévia" : `${unavailableCount} prévias`}.`,
+      );
+    } else {
+      setPhotoGalleryStatus(
+        `${signedPhotos.length} ${signedPhotos.length === 1 ? "foto salva." : "fotos salvas."}`,
+      );
+    }
+  } catch (error) {
+    console.error("Falha ao carregar as fotos do imóvel.", error);
+    activePhotos = [];
+    photoGallery.replaceChildren();
+    setPhotoGalleryStatus(describePhotoError(error));
+  }
+}
+
+async function openPhotoManager(property) {
+  activePhotoProperty = property;
+  activePhotos = [];
+  clearPhotoSelection();
+  setPhotoManagerStatus("");
+  photoManagerTitle.textContent = `Gerenciar fotos — ${property.title}`;
+  photoManagerDialog.showModal();
+  await loadManagedPhotos();
+}
+
+function getSafeStoragePath(photo) {
+  const expectedPrefix = `${activePhotoProperty.id}/`;
+  const path = photo.storage_path;
+  if (
+    photo.property_id !== activePhotoProperty.id ||
+    typeof path !== "string" ||
+    !path.startsWith(expectedPrefix) ||
+    path.slice(expectedPrefix.length).length === 0 ||
+    path.slice(expectedPrefix.length).includes("/")
+  ) {
+    throw new Error("O caminho da foto não corresponde ao imóvel selecionado.");
+  }
+  return path;
+}
+
+async function setPhotoAsCover(photo) {
+  if (!activePhotoProperty || photoOperationInProgress) return;
+  let storagePath;
+  try {
+    storagePath = getSafeStoragePath(photo);
+  } catch (error) {
+    console.error("Caminho inválido ao definir a capa.", error);
+    setPhotoManagerStatus("A foto não corresponde a este imóvel. Atualize a galeria antes de tentar novamente.");
+    return;
+  }
+
+  photoOperationInProgress = true;
+  photoGallery.replaceChildren(...activePhotos.map(createPhotoGalleryItem));
+  setPhotoManagerStatus("Atualizando a capa…");
+  try {
+    const { data, error } = await withAuthTimeout(
+      supabaseClient
+        .from("property_images")
+        .update({ is_cover: true })
+        .eq("id", photo.id)
+        .eq("property_id", activePhotoProperty.id)
+        .eq("storage_path", storagePath)
+        .select("id"),
+      "A atualização da capa excedeu o tempo limite.",
+    );
+    if (error) throw error;
+    if (data?.length !== 1) {
+      throw new Error("O banco não confirmou a atualização da capa.");
+    }
+    await loadManagedPhotos();
+    setPhotoManagerStatus("A capa foi atualizada.", "success");
+  } catch (error) {
+    console.error("Falha ao definir a capa do imóvel.", error);
+    setPhotoManagerStatus(describePhotoError(error));
+  } finally {
+    photoOperationInProgress = false;
+    photoGallery.replaceChildren(...activePhotos.map(createPhotoGalleryItem));
+  }
+}
+
+async function deletePhotoMetadata(photo, storagePath) {
+  const deleteRecord = () => withAuthTimeout(
+    supabaseClient
+      .from("property_images")
+      .delete()
+      .eq("id", photo.id)
+      .eq("property_id", activePhotoProperty.id)
+      .eq("storage_path", storagePath)
+      .select("id"),
+    "A exclusão do registro excedeu o tempo limite.",
+  );
+  const findRecord = () => withAuthTimeout(
+    supabaseClient
+      .from("property_images")
+      .select("id")
+      .eq("id", photo.id)
+      .eq("property_id", activePhotoProperty.id)
+      .eq("storage_path", storagePath)
+      .maybeSingle(),
+    "A verificação da exclusão excedeu o tempo limite.",
+  );
+
+  let result;
+  try {
+    result = await deleteRecord();
+  } catch (error) {
+    result = { data: null, error };
+  }
+  if (!result.error && result.data?.length === 1) return;
+
+  let verification = await findRecord();
+  if (verification.error) throw verification.error;
+  if (!verification.data) return;
+
+  try {
+    result = await deleteRecord();
+  } catch (error) {
+    result = { data: null, error };
+  }
+  if (!result.error && result.data?.length === 1) return;
+
+  verification = await findRecord();
+  if (verification.error) throw verification.error;
+  if (verification.data) {
+    throw result.error || new Error("O banco não confirmou a exclusão do registro.");
+  }
+}
+
+async function removeManagedPhoto(photo) {
+  if (!activePhotoProperty || photoOperationInProgress) return;
+  let storagePath;
+  try {
+    storagePath = getSafeStoragePath(photo);
+  } catch (error) {
+    console.error("Caminho inválido ao remover a foto.", error);
+    setPhotoManagerStatus("A foto não corresponde a este imóvel. Atualize a galeria antes de tentar novamente.");
+    return;
+  }
+
+  if (!window.confirm("Remover esta foto do imóvel? Esta ação não pode ser desfeita.")) return;
+
+  photoOperationInProgress = true;
+  photoGallery.replaceChildren(...activePhotos.map(createPhotoGalleryItem));
+  setPhotoManagerStatus("Removendo a foto do armazenamento…");
+  let storageRemoved = false;
+  try {
+    const { error: storageError } = await supabaseClient
+      .storage
+      .from("property-images")
+      .remove([storagePath]);
+    if (storageError) throw storageError;
+    storageRemoved = true;
+
+    await deletePhotoMetadata(photo, storagePath);
+
+    await loadManagedPhotos();
+    setPhotoManagerStatus("A foto foi removida com sucesso.", "success");
+  } catch (error) {
+    console.error("Falha ao remover a foto do imóvel.", error);
+    setPhotoManagerStatus(
+      storageRemoved
+        ? "O arquivo foi removido do Storage, mas não foi possível confirmar a remoção do registro. Atualize a galeria antes de tentar novamente."
+        : describePhotoError(error),
+    );
+    if (storageRemoved) await loadManagedPhotos();
+  } finally {
+    photoOperationInProgress = false;
+    photoGallery.replaceChildren(...activePhotos.map(createPhotoGalleryItem));
+  }
+}
+
+async function uploadSelectedPhotos() {
+  if (!activePhotoProperty || photoOperationInProgress || selectedPhotoFiles.length === 0) return;
+
+  const files = [...selectedPhotoFiles];
+  photoOperationInProgress = true;
+  uploadPhotosButton.disabled = true;
+  photoFileInput.disabled = true;
+
+  let nextOrder = activePhotos.reduce(
+    (maximum, photo) => Math.max(maximum, photo.sort_order),
+    -1,
+  ) + 1;
+  let hasCover = activePhotos.some((photo) => photo.is_cover);
+  let uploadedCount = 0;
+  const failures = [];
+
+  for (const [index, file] of files.entries()) {
+    setPhotoManagerStatus(`Enviando ${index + 1} de ${files.length}: ${file.name}…`);
+    let storagePath;
+    let uploaded = false;
+    let metadataMayExist = false;
+    try {
+      if (!window.crypto || typeof window.crypto.randomUUID !== "function") {
+        throw new Error("Este navegador não disponibiliza geração segura de nomes únicos.");
+      }
+      if (nextOrder > 2147483647) {
+        throw new Error("A galeria atingiu o limite de ordenação permitido.");
+      }
+      const extension = allowedImageTypes.get(file.type);
+      storagePath = `${activePhotoProperty.id}/${window.crypto.randomUUID()}.${extension}`;
+
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from("property-images")
+        .upload(storagePath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      uploaded = true;
+
+      const { error: insertError } = await supabaseClient
+        .from("property_images")
+        .insert({
+          property_id: activePhotoProperty.id,
+          storage_path: storagePath,
+          alt_text: "",
+          sort_order: nextOrder,
+          is_cover: !hasCover,
+        });
+      if (insertError) {
+        const { data: existingMetadata, error: verificationError } = await supabaseClient
+          .from("property_images")
+          .select("id")
+          .eq("property_id", activePhotoProperty.id)
+          .eq("storage_path", storagePath)
+          .maybeSingle();
+        if (verificationError) {
+          metadataMayExist = true;
+          throw new Error(
+            "Não foi possível confirmar se o registro da foto foi salvo.",
+            { cause: verificationError },
+          );
+        }
+        if (!existingMetadata) throw insertError;
+      }
+
+      uploadedCount += 1;
+      nextOrder += 1;
+      hasCover = true;
+    } catch (error) {
+      console.error(`Falha ao enviar a foto “${file.name}”.`, error);
+      let message = describePhotoError(error);
+      if (metadataMayExist) {
+        message = "Não foi possível confirmar se o registro foi salvo. O arquivo foi mantido no Storage para evitar quebrar uma possível referência; atualize a galeria antes de tentar novamente.";
+      } else if (uploaded && storagePath) {
+        try {
+          const { error: cleanupError } = await supabaseClient
+            .storage
+            .from("property-images")
+            .remove([storagePath]);
+          if (cleanupError) throw cleanupError;
+        } catch (cleanupError) {
+          console.error(`Falha ao limpar o arquivo órfão ${storagePath}.`, cleanupError);
+          message = "O cadastro da foto falhou e o arquivo enviado não pôde ser removido do Storage. Solicite a limpeza manual deste objeto.";
+        }
+      }
+      failures.push(`“${file.name}”: ${message}`);
+    }
+  }
+
+  clearPhotoSelection();
+  await loadManagedPhotos();
+  if (failures.length === 0) {
+    setPhotoManagerStatus(
+      `${uploadedCount} ${uploadedCount === 1 ? "foto enviada" : "fotos enviadas"} com sucesso.`,
+      "success",
+    );
+  } else {
+    const successMessage = uploadedCount
+      ? `${uploadedCount} ${uploadedCount === 1 ? "foto enviada" : "fotos enviadas"}; `
+      : "";
+    setPhotoManagerStatus(`${successMessage}falha(s): ${failures.join(" ")}`);
+  }
+
+  photoOperationInProgress = false;
+  photoFileInput.disabled = false;
+  photoGallery.replaceChildren(...activePhotos.map(createPhotoGalleryItem));
 }
 
 function showLogin(message = "") {
@@ -115,7 +591,17 @@ function createPropertyListItem(property) {
     archived: "Arquivado",
   }[property.status] || "Status desconhecido";
 
-  item.append(details, status);
+  const managePhotos = document.createElement("button");
+  managePhotos.className = "admin-button admin-button-secondary";
+  managePhotos.type = "button";
+  managePhotos.dataset.propertyId = property.id;
+  managePhotos.textContent = "Gerenciar fotos";
+
+  const actions = document.createElement("div");
+  actions.className = "property-list-actions";
+  actions.append(managePhotos);
+
+  item.append(details, status, actions);
   return item;
 }
 
@@ -151,6 +637,7 @@ async function loadProperties() {
     if (error) throw error;
 
     const properties = data || [];
+    propertiesById = new Map(properties.map((property) => [property.id, property]));
     propertyList.replaceChildren(...properties.map(createPropertyListItem));
     propertyListStatus.textContent = properties.length
       ? `${properties.length} ${properties.length === 1 ? "imóvel cadastrado." : "imóveis cadastrados."}`
@@ -247,6 +734,84 @@ document.querySelectorAll("#cancel-property-form, #cancel-property-form-bottom")
 });
 
 refreshPropertiesButton.addEventListener("click", loadProperties);
+
+propertyList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-property-id]");
+  if (!button) return;
+
+  const property = propertiesById.get(button.dataset.propertyId);
+  if (!property) {
+    setDashboardMessage("Atualize a lista e tente abrir as fotos novamente.");
+    return;
+  }
+  openPhotoManager(property).catch((error) => {
+    console.error("Falha ao abrir o gerenciamento de fotos.", error);
+    setPhotoManagerStatus("Não foi possível abrir as fotos deste imóvel.");
+  });
+});
+
+photoFileInput.addEventListener("change", () => {
+  setPhotoManagerStatus("");
+  const files = [...photoFileInput.files];
+  clearPhotoSelection();
+
+  if (files.length === 0) return;
+
+  const errors = validatePhotoFiles(files);
+  if (errors.length > 0) {
+    setPhotoManagerStatus(errors.join(" "));
+    return;
+  }
+
+  selectedPhotoFiles = files;
+  renderPhotoPreviews(files);
+  uploadPhotosButton.disabled = photoOperationInProgress;
+});
+
+photoUploadForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  uploadSelectedPhotos().catch((error) => {
+    console.error("Falha inesperada durante o envio das fotos.", error);
+    photoOperationInProgress = false;
+    photoFileInput.disabled = false;
+    uploadPhotosButton.disabled = selectedPhotoFiles.length === 0;
+    setPhotoManagerStatus(describePhotoError(error));
+  });
+});
+
+photoGallery.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-photo-action]");
+  if (!button) return;
+
+  const photo = activePhotos.find((item) => item.id === button.dataset.photoId);
+  if (!photo) {
+    setPhotoManagerStatus("A foto não está mais na lista. Atualize a galeria e tente novamente.");
+    return;
+  }
+
+  if (button.dataset.photoAction === "cover") {
+    setPhotoAsCover(photo);
+  } else if (button.dataset.photoAction === "remove") {
+    removeManagedPhoto(photo);
+  }
+});
+
+closePhotoManagerButton.addEventListener("click", () => {
+  if (!photoOperationInProgress) photoManagerDialog.close();
+});
+
+photoManagerDialog.addEventListener("cancel", (event) => {
+  if (photoOperationInProgress) event.preventDefault();
+});
+
+photoManagerDialog.addEventListener("close", () => {
+  clearPhotoSelection();
+  activePhotoProperty = null;
+  activePhotos = [];
+  photoGallery.replaceChildren();
+  setPhotoGalleryStatus("Abra o gerenciamento para carregar as fotos.");
+  setPhotoManagerStatus("");
+});
 
 propertyTitleInput.addEventListener("input", () => {
   propertyTitleInput.setCustomValidity("");

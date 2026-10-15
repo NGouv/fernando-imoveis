@@ -97,6 +97,53 @@
           </p>
           <ul class="property-list" id="property-list" aria-label="Imóveis cadastrados"></ul>
 
+          <dialog class="photo-manager-dialog" id="photo-manager-dialog" aria-labelledby="photo-manager-title">
+            <section class="photo-manager">
+              <div class="photo-manager-heading">
+                <div>
+                  <p class="admin-eyebrow">Galeria do imóvel</p>
+                  <h2 id="photo-manager-title">Gerenciar fotos</h2>
+                </div>
+                <button
+                  class="admin-button admin-button-secondary"
+                  id="close-photo-manager"
+                  type="button"
+                  aria-label="Fechar gerenciamento de fotos"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <p class="admin-message" id="photo-manager-status" role="status" aria-live="polite" hidden></p>
+
+              <form class="photo-upload-form" id="photo-upload-form">
+                <div class="property-field">
+                  <label for="photo-file-input">Selecionar imagens</label>
+                  <input
+                    id="photo-file-input"
+                    name="images"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    multiple
+                  >
+                  <small>JPEG, PNG, WebP ou AVIF; até 10 MB por imagem.</small>
+                </div>
+                <ul class="photo-preview-list" id="photo-preview-list" aria-label="Pré-visualização das imagens selecionadas"></ul>
+                <button class="admin-button" id="upload-photos" type="submit" disabled>
+                  Enviar fotos
+                </button>
+              </form>
+
+              <section class="photo-gallery-section" aria-labelledby="saved-photos-title">
+                <h3 id="saved-photos-title">Fotos salvas</h3>
+                <p class="photo-gallery-status" id="photo-gallery-status" role="status" aria-live="polite">
+                  Abra o gerenciamento para carregar as fotos.
+                </p>
+                <ul class="photo-gallery" id="photo-gallery" aria-label="Fotos salvas do imóvel"></ul>
+              </section>
+            </section>
+          </dialog>
+
           <form class="property-form" id="property-form" hidden>
             <div class="property-form-heading">
               <div>

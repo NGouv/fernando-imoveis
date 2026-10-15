@@ -277,6 +277,7 @@ create policy property_images_storage_admin_update
     )
   );
 
+create policy property_images_storage_admin_delete
   on storage.objects
   for delete
   to authenticated
